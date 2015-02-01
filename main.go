@@ -47,7 +47,7 @@ func main() {
 	}
 	log.Printf("Repository ready")
 
-	log.Printf("Gathering pull requests")
+	log.Printf("Gathering pull requests and releases")
 	//setup github client
 	t := &oauth.Transport{
 		Token: &oauth.Token{AccessToken: token},
@@ -67,7 +67,7 @@ func main() {
 		}
 		history.AddPullRequest(ver, pr)
 	}
-	log.Printf("Pull requests collected")
+	log.Printf("Pull requests and releases collected")
 
 	history.Releases.MatchToGithubReleases(releases)
 

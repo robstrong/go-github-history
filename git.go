@@ -57,7 +57,7 @@ func (r *Repo) SetupRepo(token string) (err error) {
 			return err
 		}
 	}
-	cmd := exec.Command(gitPath, "pull", "--tags", "https://"+token+"@github.com/"+r.Owner+"/"+r.Repository+".git")
+	cmd := exec.Command(gitPath, "pull", "--tags", "https://"+token+":x-oauth-basic@github.com/"+r.Owner+"/"+r.Repository+".git")
 	cmd.Dir = path
 	err = cmd.Run()
 	if err != nil {
