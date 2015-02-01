@@ -67,9 +67,15 @@ func (r *Repo) SetupRepo(token string) (err error) {
 	return nil
 }
 
-func NewRepo(owner string, repo string) *Repo {
-	return &Repo{
-		Owner:      owner,
-		Repository: repo,
+func NewRepo(ownerRepo string) (r *Repo, err error) {
+	parts := strings.Split(ownerRepo, "/")
+	if len(parts) != 2 {
+		err = errors.New("Could not parse owner/repo")
+		return
 	}
+	r = &Repo{
+		Owner:      parts[0],
+		Repository: parts[1],
+	}
+	return
 }

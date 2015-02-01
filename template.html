@@ -17,7 +17,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>Release History<small class="pull-right">Generated: {{ .GenTime }}</small></h1>
+        <h1>Release History - {{ .Repository }}<small class="pull-right">Generated: {{ .GenTime }}</small></h1>
         <br>
         {{ range $release := .SortedReleases }}
         <div class="row">
@@ -25,8 +25,8 @@
                 <div class="panel panel-primary">
                     <div class="panel-heading">
                         <h4>
-                            v{{ $release.Version.String }} 
-                            <small class="pull-right" style="color:#fff; padding-left: 20px;"></small>
+                            v{{ $release.Version.String }} - {{ $release.GithubRelease.Name }}
+                            <small class="pull-right" style="color:#fff; padding-left: 20px;">{{ $release.PublishedDateFormatted }}</small>
                         </h4>
                     </div>
                     <div class="table-responsive">

@@ -1,8 +1,11 @@
 package main
 
 import (
+	"errors"
+	"io/ioutil"
 	"log"
-	"sync"
+	"os/user"
+	"strings"
 	"time"
 
 	"code.google.com/p/goauth2/oauth"
@@ -11,26 +14,34 @@ import (
 )
 
 var (
-	githubOwner  = kingpin.Flag("owner", "Github Repository Owner").Short('o').Required().String()
-	githubRepo   = kingpin.Flag("repo", "Github Repository").Short('r').Required().String()
-	token        = kingpin.Flag("token", "Token").Short('t').Required().String()
-	outputFile   = kingpin.Flag("out", "HTML output file").Default("gh-history.html").String()
+	githubRepo   = kingpin.Arg("repo", "Github Repository in the format 'owner/repository'").Required().String()
+	tokenPath    = kingpin.Flag("token-path", "Path to file containing token").Short('t').String()
+	outputFile   = kingpin.Flag("out", "HTML output file").Short('o').Default("gh-history.html").String()
 	templateFile = kingpin.Flag("template", "HTML template file").Default("template.html").String()
 	debug        = kingpin.Flag("verbose", "Enable verbose output").Default("false").Bool()
 )
 
 func main() {
-	kingpin.Version("0.0.1")
 	kingpin.Parse()
 
 	history := ReleaseHistory{
-		GenTime: time.Now().Format("Jan 2, 2006 3:04:05pm"),
+		GenTime:    time.Now().Format("Jan 2, 2006 3:04:05pm"),
+		Repository: *githubRepo,
+	}
+
+	//get token from home dir
+	token, err := getToken(*tokenPath)
+	if err != nil {
+		log.Fatal(err.Error())
 	}
 
 	//setup git repo (used to lookup tags for PRs)
 	log.Printf("Setting up repository")
-	repo := NewRepo(*githubOwner, *githubRepo)
-	err := repo.SetupRepo(*token)
+	repo, err := NewRepo(*githubRepo)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+	err = repo.SetupRepo(token)
 	if err != nil {
 		log.Fatal(err.Error())
 	}
@@ -39,11 +50,14 @@ func main() {
 	log.Printf("Gathering pull requests")
 	//setup github client
 	t := &oauth.Transport{
-		Token: &oauth.Token{AccessToken: *token},
+		Token: &oauth.Token{AccessToken: token},
 	}
 	client := github.NewClient(t.Client())
-	prs := getAllPullRequests(client, *githubOwner, *githubRepo)
+	prs := getAllPullRequests(client, repo.Owner, repo.Repository)
+	releases := getAllReleases(client, repo.Owner, repo.Repository)
 
+	//look at the head SHA for each PR and find the earliest git tag that contains
+	//that commit. that tag is the version that the PR was merged into
 	for pr := range prs {
 		sha := *pr.Head.SHA
 		ver, err := repo.getVersionForCommit(sha)
@@ -55,6 +69,8 @@ func main() {
 	}
 	log.Printf("Pull requests collected")
 
+	history.Releases.MatchToGithubReleases(releases)
+
 	history.GenerateHTML(*outputFile)
 }
 
@@ -64,56 +80,30 @@ func debugLog(format string, a ...interface{}) {
 	}
 }
 
-func getAllPullRequests(client *github.Client, owner string, repo string) <-chan github.PullRequest {
-	out := make(chan github.PullRequest)
-	go func() {
-		opt := &github.PullRequestListOptions{
-			State: "closed",
-		}
-		opt.ListOptions.PerPage = 100
-		debugLog("Fetching Page: 1")
-		prs, resp, err := client.PullRequests.List(
-			owner,
-			repo,
-			opt,
-		)
-		if err != nil {
-			log.Fatal(err.Error())
-		}
-		debugLog("Found %d PRs", len(prs))
-		for _, pr := range prs {
-			out <- pr
-		}
-		if resp.NextPage == 0 {
-			debugLog("All PRs collected")
-			close(out)
+func getToken(tokenPath string) (token string, err error) {
+	//check if a token file path was passed in
+	if tokenPath != "" {
+		contents, readErr := ioutil.ReadFile(tokenPath)
+		if readErr != nil {
+			err = errors.New("Could not find token file at path: " + tokenPath)
 			return
 		}
-		var group sync.WaitGroup
-		for i := 2; i <= resp.LastPage; i++ {
-			group.Add(1)
-			go func(page int) {
-				debugLog("Fetching Page: %d", page)
-				opt.ListOptions.Page = page
-				prs, _, err := client.PullRequests.List(
-					owner,
-					repo,
-					opt,
-				)
-				debugLog("Found %d PRs on page %d", len(prs), page)
-				if err != nil {
-					log.Fatal(err.Error())
-				}
-				for _, pr := range prs {
-					out <- pr
-				}
-				group.Done()
-			}(i)
-		}
-		go func() {
-			group.Wait()
-			close(out)
-		}()
-	}()
-	return out
+		token = strings.TrimSpace(string(contents))
+		return
+	}
+
+	//check if .gh-history file exists in home dir
+	usr, err := user.Current()
+	if err != nil {
+		return
+	}
+	homeToken, err := ioutil.ReadFile(usr.HomeDir + "/.gh-history/token")
+	if err != nil {
+		err = errors.New("Github Token not found. You must create a file in " +
+			usr.HomeDir + "/.gh-history/token which contains your token. To create a " +
+			"token go to, https://github.com/settings/applications#personal-access-tokens")
+		return
+	}
+	token = strings.TrimSpace(string(homeToken))
+	return
 }
