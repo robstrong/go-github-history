@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os/user"
+	"sort"
 	"strings"
 	"time"
 
@@ -14,17 +15,18 @@ import (
 )
 
 var (
+	genType      = kingpin.Arg("gen-type", "Generation type ('releases' or 'issues')").Required().String()
 	githubRepo   = kingpin.Arg("repo", "Github Repository in the format 'owner/repository'").Required().String()
 	tokenPath    = kingpin.Flag("token-path", "Path to file containing token").Short('t').String()
 	outputFile   = kingpin.Flag("out", "HTML output file").Short('o').Default("gh-history.html").String()
-	templateFile = kingpin.Flag("template", "HTML template file").Default("template.html").String()
+	templateFile = kingpin.Flag("template", "HTML template file, default is 'releases.html' or 'issues.html' depending on gen-type").Default("").String()
 	debug        = kingpin.Flag("verbose", "Enable verbose output").Default("false").Bool()
 )
 
 func main() {
 	kingpin.Parse()
 
-	history := ReleaseHistory{
+	history := History{
 		GenTime:    time.Now().Format("Jan 2, 2006 3:04:05pm"),
 		Repository: *githubRepo,
 	}
@@ -34,43 +36,73 @@ func main() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
-
-	//setup git repo (used to lookup tags for PRs)
-	log.Printf("Setting up repository")
-	repo, err := NewRepo(*githubRepo)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	err = repo.SetupRepo(token)
-	if err != nil {
-		log.Fatal(err.Error())
-	}
-	log.Printf("Repository ready")
-
-	log.Printf("Gathering pull requests and releases")
 	//setup github client
 	t := &oauth.Transport{
 		Token: &oauth.Token{AccessToken: token},
 	}
 	client := github.NewClient(t.Client())
-	prs := getAllPullRequests(client, repo.Owner, repo.Repository)
-	releases := getAllReleases(client, repo.Owner, repo.Repository)
+	repo, err := NewRepo(*githubRepo)
 
-	//look at the head SHA for each PR and find the earliest git tag that contains
-	//that commit. that tag is the version that the PR was merged into
-	for pr := range prs {
-		sha := *pr.Head.SHA
-		ver, err := repo.getVersionForCommit(sha)
+	switch *genType {
+
+	case "releases":
+		//setup git repo (used to lookup tags for PRs)
+		log.Printf("Setting up repository")
 		if err != nil {
-			debugLog("ERROR: %s in PR #%d", err.Error(), *pr.Number)
-			continue
+			log.Fatal(err.Error())
 		}
-		history.AddPullRequest(ver, pr)
+		err = repo.SetupRepo(token)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+		log.Printf("Repository ready")
+
+		log.Printf("Gathering pull requests and releases")
+		prs := getAllPullRequests(client, repo.Owner, repo.Repository)
+		releases := getAllReleases(client, repo.Owner, repo.Repository)
+
+		//look at the head SHA for each PR and find the earliest git tag that contains
+		//that commit. that tag is the version that the PR was merged into
+		for pr := range prs {
+			sha := *pr.Head.SHA
+			ver, err := repo.getVersionForCommit(sha)
+			if err != nil {
+				debugLog("ERROR: %s in PR #%d", err.Error(), *pr.Number)
+				continue
+			}
+			history.AddPullRequest(ver, pr)
+		}
+		log.Printf("Pull requests and releases collected")
+
+		history.Releases.MatchToGithubReleases(releases)
+		if *templateFile == "" {
+			*templateFile = "releases.html"
+		}
+
+	case "issues":
+		closedIssues := getAllIssues(client, repo.Owner, repo.Repository, "closed")
+		for issue := range closedIssues {
+			if issue.PullRequestLinks == nil {
+				history.Issues = append(history.Issues, issue)
+			}
+		}
+		openIssues := getAllIssues(client, repo.Owner, repo.Repository, "open")
+		for issue := range openIssues {
+			if issue.PullRequestLinks == nil {
+				log.Printf("Num %d\n", *issue.Number)
+				history.Issues = append(history.Issues, issue)
+				log.Println(len(history.Issues))
+			}
+		}
+		sort.Sort(ByNumber(history.Issues))
+		log.Println(len(history.Issues))
+		if *templateFile == "" {
+			*templateFile = "issues.html"
+		}
+
+	default:
+		log.Printf("Invalid generation type: %s\n", *genType)
 	}
-	log.Printf("Pull requests and releases collected")
-
-	history.Releases.MatchToGithubReleases(releases)
-
 	history.GenerateHTML(*outputFile)
 }
 
