@@ -89,13 +89,10 @@ func main() {
 		openIssues := getAllIssues(client, repo.Owner, repo.Repository, "open")
 		for issue := range openIssues {
 			if issue.PullRequestLinks == nil {
-				log.Printf("Num %d\n", *issue.Number)
 				history.Issues = append(history.Issues, issue)
-				log.Println(len(history.Issues))
 			}
 		}
 		sort.Sort(ByNumber(history.Issues))
-		log.Println(len(history.Issues))
 		if *templateFile == "" {
 			*templateFile = "issues.html"
 		}
