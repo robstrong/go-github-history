@@ -2,9 +2,12 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
+	"os"
 	"os/user"
+	"path/filepath"
 	"sort"
 	"strings"
 	"time"
@@ -42,6 +45,7 @@ func main() {
 	}
 	client := github.NewClient(t.Client())
 	repo, err := NewRepo(*githubRepo)
+	currentDir := curDir()
 
 	switch *genType {
 
@@ -76,7 +80,7 @@ func main() {
 
 		history.Releases.MatchToGithubReleases(releases)
 		if *templateFile == "" {
-			*templateFile = "releases.html"
+			*templateFile = fmt.Sprintf("%s/%s", currentDir, "releases.html")
 		}
 
 	case "issues":
@@ -94,7 +98,7 @@ func main() {
 		}
 		sort.Sort(ByNumber(history.Issues))
 		if *templateFile == "" {
-			*templateFile = "issues.html"
+			*templateFile = fmt.Sprintf("%s/%s", currentDir, "issues.html")
 		}
 
 	default:
@@ -107,6 +111,14 @@ func debugLog(format string, a ...interface{}) {
 	if *debug {
 		log.Printf(format, a...)
 	}
+}
+
+func curDir() string {
+	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	if err != nil {
+		log.Fatal(err)
+	}
+	return dir
 }
 
 func getToken(tokenPath string) (token string, err error) {

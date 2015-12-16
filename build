@@ -1,0 +1,3 @@
+#!/bin/bash
+go generate
+GOARCH=amd64 GOOS=linux go build -tags hook-receiver -ldflags '-s' -o bin/go-github-history-linux-amd64 .
