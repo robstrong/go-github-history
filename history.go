@@ -17,7 +17,7 @@ type History struct {
 }
 
 func (h *History) GenerateHTML(o string) {
-	log.Print("Generating HTML")
+	log.Printf("Generating HTML using template %s\n", *templateFile)
 	tmpl, err := template.ParseFiles(*templateFile)
 	if err != nil {
 		log.Fatal(err.Error())

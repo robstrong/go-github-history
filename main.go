@@ -45,6 +45,9 @@ func main() {
 	}
 	client := github.NewClient(t.Client())
 	repo, err := NewRepo(*githubRepo)
+	if err != nil {
+		log.Fatal(err.Error())
+	}
 	currentDir := curDir()
 
 	switch *genType {
@@ -52,9 +55,6 @@ func main() {
 	case "releases":
 		//setup git repo (used to lookup tags for PRs)
 		log.Printf("Setting up repository")
-		if err != nil {
-			log.Fatal(err.Error())
-		}
 		err = repo.SetupRepo(token)
 		if err != nil {
 			log.Fatal(err.Error())
@@ -102,7 +102,7 @@ func main() {
 		}
 
 	default:
-		log.Printf("Invalid generation type: %s\n", *genType)
+		log.Fatalf("Invalid generation type: %s\n", *genType)
 	}
 	history.GenerateHTML(*outputFile)
 }
