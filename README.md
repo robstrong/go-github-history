@@ -18,20 +18,20 @@ go build
 To get help on the command, use 
 ```sh
 ./go-gh-history --help
-usage: go-gh-history [<flags>] <repo>
+usage: go-github-history-linux-amd64 [<flags>] <gen-type> <repo>
 
 Flags:
-  --help     Show help.
+  --help               Show help.
   -t, --token-path=TOKEN-PATH  
-             Path to file containing token
+                       Path to file containing token
   -o, --out="gh-history.html"  
-             HTML output file
-  --template="template.html"  
-             HTML template file
-  --verbose  Enable verbose output
+                       HTML output file
+  --template=TEMPLATE  HTML template file, default is 'releases.html' or 'issues.html' depending on gen-type
+  --verbose            Enable verbose output
 
 Args:
-  <repo>  Github Repository in the format 'owner/repository'
+  <gen-type>  Generation type ('releases' or 'issues')
+  <repo>      Github Repository in the format 'owner/repository'
 ```
 
 
