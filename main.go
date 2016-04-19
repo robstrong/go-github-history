@@ -12,9 +12,10 @@ import (
 	"strings"
 	"time"
 
-	"code.google.com/p/goauth2/oauth"
+	"golang.org/x/oauth2"
+
 	"github.com/google/go-github/github"
-	"gopkg.in/alecthomas/kingpin.v1"
+	"gopkg.in/alecthomas/kingpin.v2"
 )
 
 var (
@@ -40,10 +41,11 @@ func main() {
 		log.Fatal(err.Error())
 	}
 	//setup github client
-	t := &oauth.Transport{
-		Token: &oauth.Token{AccessToken: token},
-	}
-	client := github.NewClient(t.Client())
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: token},
+	)
+	tc := oauth2.NewClient(oauth2.NoContext, ts)
+	client := github.NewClient(tc)
 	repo, err := NewRepo(*githubRepo)
 	if err != nil {
 		log.Fatal(err.Error())

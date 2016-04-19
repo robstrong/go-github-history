@@ -21,6 +21,9 @@ func (r Release) PublishedDateFormatted() string {
 	if err != nil {
 		return ""
 	}
+	if r.GithubRelease.PublishedAt == nil {
+		return ""
+	}
 	return r.GithubRelease.PublishedAt.In(loc).Format("Jan 2, 2006 3:04:05pm")
 }
 

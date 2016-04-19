@@ -29,7 +29,7 @@ func (r *Repo) getVersionForCommit(sha string) (semver.Version, error) {
 	if len(lines) == 1 {
 		return semver.Version{}, errors.New("Tag not found")
 	}
-	ver, err := semver.New(strings.Replace(lines[0], "v", "", 1))
+	ver, err := semver.Parse(strings.Replace(lines[0], "v", "", 1))
 	if err != nil {
 		return ver, errors.New(err.Error() + ", tag: " + lines[0])
 	}

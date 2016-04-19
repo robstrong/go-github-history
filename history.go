@@ -37,7 +37,7 @@ func (h *History) GenerateHTML(o string) {
 func (h History) SortedReleases() Releases {
 	var versions semver.Versions
 	for v := range h.Releases {
-		ver, err := semver.New(v)
+		ver, err := semver.Parse(v)
 		if err != nil {
 			debugLog("Invalid version: " + err.Error())
 			continue

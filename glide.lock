@@ -1,0 +1,47 @@
+hash: 084c5cc4c5c3f9eccbda8416bbfd36854443b79d3d32269e16b3e0f210088715
+updated: 2016-04-19T09:41:58.79008981-04:00
+imports:
+- name: github.com/alecthomas/template
+  version: a0175ee3bccc567396460bf5acd36800cb10c49c
+  subpackages:
+  - parse
+- name: github.com/alecthomas/units
+  version: 2efee857e7cfd4f3d0138cc3cbb1b4966962b93a
+- name: github.com/blang/semver
+  version: aea32c919a18e5ef4537bbd283ff29594b1b0165
+- name: github.com/golang/protobuf
+  version: 2ebff28ac76fb19e2d25e5ddd4885708dfdd5611
+  subpackages:
+  - proto
+- name: github.com/google/go-github
+  version: f8cebc8ad645ff0e5df4ffc1059f644c3cb99b1c
+  subpackages:
+  - github
+- name: github.com/google/go-querystring
+  version: 9235644dd9e52eeae6fa48efd539fdc351a0af53
+  subpackages:
+  - query
+- name: golang.org/x/net
+  version: fb93926129b8ec0056f2f458b1f519654814edf0
+  subpackages:
+  - context
+- name: golang.org/x/oauth2
+  version: 7e9cd5d59563851383f8f81a7fbb01213709387c
+  subpackages:
+  - oauth
+  - internal
+- name: google.golang.org/appengine
+  version: e234e71924d4aa52444bc76f2f831f13fa1eca60
+  subpackages:
+  - urlfetch
+  - internal
+  - internal/urlfetch
+  - internal/base
+  - internal/datastore
+  - internal/log
+  - internal/remote_api
+- name: gopkg.in/alecthomas/kingpin.v1
+  version: 45f9714aa86a9624491adeaab1e9df1baf84dd38
+- name: gopkg.in/alecthomas/kingpin.v2
+  version: 8cccfa8eb2e3183254457fb1749b2667fbc364c7
+devImports: []
